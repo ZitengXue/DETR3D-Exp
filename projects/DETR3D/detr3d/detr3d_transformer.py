@@ -75,7 +75,7 @@ class Detr3DTransformer(BaseModule):
                 m.init_weight()
         xavier_init(self.reference_points, distribution='uniform', bias=0.)
 
-    def forward(self, mlvl_feats, query_embed, reg_branches=None, **kwargs):
+    def forward(self, mlvl_feats, query_embed,memory_text, reg_branches=None, **kwargs):
         """Forward function for `Detr3DTransformer`.
         Args:
             mlvl_feats (list(Tensor)): Input queries from
@@ -120,6 +120,7 @@ class Detr3DTransformer(BaseModule):
             query_pos=query_pos,
             reference_points=reference_points,
             reg_branches=reg_branches,
+            memory_text=memory_text,
             **kwargs)
 
         inter_references_out = inter_references

@@ -21,6 +21,7 @@ from .mask2former_layers import (Mask2FormerTransformerDecoder,
 from .utils import (MLP, AdaptivePadding, ConditionalAttention,
                     PatchEmbed, PatchMerging, coordinate_to_encoding,
                     inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
+from .vlfuse_helper import BertEncoderLayer, VLFuse, permute_and_flatten
 
 __all__ = [
     'nlc_to_nchw', 'nchw_to_nlc', 'AdaptivePadding', 'PatchEmbed',
@@ -37,5 +38,6 @@ __all__ = [
     'CdnQueryGenerator', 'Mask2FormerTransformerEncoder',
     'Mask2FormerTransformerDecoderLayer', 'Mask2FormerTransformerDecoder',
     'GroundingDinoTransformerDecoderLayer', 'GroundingDinoTransformerEncoder',
-    'GroundingDinoTransformerDecoder'
+    'GroundingDinoTransformerDecoder','VLFuse', 'permute_and_flatten',
+    'BertEncoderLayer'
 ]

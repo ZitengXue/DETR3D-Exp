@@ -72,7 +72,7 @@ class DETR3D(MVXTwoStageDetector):
         self._special_tokens = '. '
         self.positional_encoding = SinePositionalEncoding(
             **positional_encoding_single)
-        self.encoder = GroundingDinoTransformerEncoder(**encoder)
+        # self.encoder = GroundingDinoTransformerEncoder(**encoder)
         # self.level_embed = nn.Parameter(
         #     torch.Tensor(4, 256))
         nn.init.constant_(self.text_feat_map.bias.data, 0)
@@ -156,8 +156,8 @@ class DETR3D(MVXTwoStageDetector):
         bsz=len(batch_data_samples)
         #文本预处理
         text_prompts=[
-        'car', 'truck', 'trailer', 'bus', 'construction_vehicle', 'bicycle',
-        'motorcycle', 'pedestrian', 'traffic_cone', 'barrier']
+        'car', 'truck', 'trailer', 'bus', 'construction vehicle', 'bicycle',
+        'motorcycle', 'pedestrian', 'traffic cone', 'barrier']
         batch_gt_instances_3d = [
             item.gt_instances_3d for item in batch_data_samples
         ]
@@ -180,19 +180,20 @@ class DETR3D(MVXTwoStageDetector):
             positive_maps.append(positive_map)
 
         text_dict = self.language_model(new_text_prompts)
-        for key, value in text_dict.items():
-            text_dict[key] = torch.cat([value] * 6, dim=0)
+        # for key, value in text_dict.items():
+        #     text_dict[key] = torch.cat([value] * 6, dim=0)
         if self.text_feat_map is not None:
             text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
+        memory_text=text_dict['embedded']
         #####################################################################
-        encoder_inputs_dict = self.pre_transformer(
-            img_feats, batch_data_samples)
+        # encoder_inputs_dict = self.pre_transformer(
+        #     img_feats, batch_data_samples)
 
-        memory = self.forward_encoder(
-            **encoder_inputs_dict, text_dict=text_dict)
-        del img_feats
-        img_feats = self.restore_img_feats(memory, encoder_inputs_dict['spatial_shapes'], encoder_inputs_dict['level_start_index'])
-        outs = self.pts_bbox_head(img_feats, batch_input_metas, **kwargs)#text_dict
+        # memory,memory_text = self.forward_encoder(
+        #     **encoder_inputs_dict, text_dict=text_dict)#text和图像特征融合
+        # del img_feats
+        # img_feats = self.restore_img_feats(memory, encoder_inputs_dict['spatial_shapes'], encoder_inputs_dict['level_start_index'])
+        outs = self.pts_bbox_head(img_feats, batch_input_metas,memory_text, **kwargs)#text_dict
         loss_inputs = [batch_gt_instances_3d, outs]
         losses_pts = self.pts_bbox_head.loss_by_feat(*loss_inputs)
 
@@ -490,7 +491,7 @@ class DETR3D(MVXTwoStageDetector):
                         level_start_index: Tensor, valid_ratios: Tensor,
                         text_dict: Dict) -> Dict:
         text_token_mask = text_dict['text_token_mask']
-        memory, _ = self.encoder(
+        memory, memory_text = self.encoder(
             query=feat,
             # query_pos=feat_pos,
             key_padding_mask=feat_mask,  # for self_attn
@@ -509,7 +510,7 @@ class DETR3D(MVXTwoStageDetector):
         #     memory_text=memory_text,
         #     text_token_mask=text_token_mask)
         # return encoder_outputs_dict
-        return memory
+        return memory,memory_text
     @staticmethod
     def get_valid_ratio(mask: Tensor) -> Tensor:
         """Get the valid radios of feature map in a level.

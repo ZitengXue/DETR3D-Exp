@@ -112,7 +112,7 @@ class DETR3DHead(DETRHead):
             for m in self.cls_branches:
                 nn.init.constant_(m[-1].bias, bias_init)
 
-    def forward(self, mlvl_feats: List[Tensor], img_metas: List[Dict],
+    def forward(self, mlvl_feats: List[Tensor], img_metas: List[Dict],memory_text:Tensor,
                 **kwargs) -> Dict[str, Tensor]:
         """Forward function.
 
@@ -135,6 +135,7 @@ class DETR3DHead(DETRHead):
             query_embeds,
             reg_branches=self.reg_branches if self.with_box_refine else None,
             img_metas=img_metas,
+            memory_text=memory_text,
             **kwargs)
         hs = hs.permute(0, 2, 1, 3)
         outputs_classes = []
