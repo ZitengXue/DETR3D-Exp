@@ -146,10 +146,10 @@ class GroundingDinoTransformerEncoder(DeformableDetrTransformerEncoder):
         #     DeformableDetrTransformerEncoderLayer(**self.layer_cfg)
         #     for _ in range(self.num_layers)
         # ])
-        self.text_layers = ModuleList([
-            DetrTransformerEncoderLayer(**self.text_layer_cfg)
-            for _ in range(self.num_layers)
-        ])
+        # self.text_layers = ModuleList([
+        #     DetrTransformerEncoderLayer(**self.text_layer_cfg)
+        #     for _ in range(self.num_layers)
+        # ])
         self.fusion_layers = ModuleList([
             SingleScaleBiAttentionBlock(**self.fusion_layer_cfg)
             for _ in range(self.num_layers)
@@ -208,21 +208,21 @@ class GroundingDinoTransformerEncoder(DeformableDetrTransformerEncoder):
         output = query
         # reference_points = self.get_encoder_reference_points(
         #     spatial_shapes, valid_ratios, device=query.device)
-        if self.text_layers:
-            # generate pos_text
-            bs, n_text, _ = memory_text.shape
-            if pos_text is None and position_ids is None:
-                pos_text = (
-                    torch.arange(n_text,
-                                 device=memory_text.device).float().unsqueeze(
-                                     0).unsqueeze(-1).repeat(bs, 1, 1))
-                pos_text = get_text_sine_pos_embed(
-                    pos_text, num_pos_feats=256, exchange_xy=False)
-            if position_ids is not None:
-                pos_text = get_text_sine_pos_embed(
-                    position_ids[..., None],
-                    num_pos_feats=256,
-                    exchange_xy=False)
+        # if self.text_layers:
+        #     # generate pos_text
+        #     bs, n_text, _ = memory_text.shape
+        #     if pos_text is None and position_ids is None:
+        #         pos_text = (
+        #             torch.arange(n_text,
+        #                          device=memory_text.device).float().unsqueeze(
+        #                              0).unsqueeze(-1).repeat(bs, 1, 1))
+        #         pos_text = get_text_sine_pos_embed(
+        #             pos_text, num_pos_feats=256, exchange_xy=False)
+        #     if position_ids is not None:
+        #         pos_text = get_text_sine_pos_embed(
+        #             position_ids[..., None],
+        #             num_pos_feats=256,
+        #             exchange_xy=False)
 
         # main process
         # for layer_id, layer in enumerate(self.layers):
@@ -234,16 +234,16 @@ class GroundingDinoTransformerEncoder(DeformableDetrTransformerEncoder):
                     attention_mask_v=key_padding_mask,
                     attention_mask_l=text_attention_mask,
                 )
-            if self.text_layers:
-                text_num_heads = self.text_layers[
-                    layer_id].self_attn_cfg.num_heads
-                memory_text = self.text_layers[layer_id](
-                    query=memory_text[0],
-                    query_pos=(pos_text if pos_text is not None else None),
-                    attn_mask=~text_self_attention_masks.repeat(
-                        text_num_heads, 1, 1),  # note we use ~ for mask here
-                    key_padding_mask=None,
-                )
+            # if self.text_layers:
+            #     text_num_heads = self.text_layers[
+            #         layer_id].self_attn_cfg.num_heads
+            #     memory_text = self.text_layers[layer_id](
+            #         query=memory_text[0],
+            #         query_pos=(pos_text if pos_text is not None else None),
+            #         attn_mask=~text_self_attention_masks.repeat(
+            #             text_num_heads, 1, 1),  # note we use ~ for mask here
+            #         key_padding_mask=None,
+            #     )
             # output = layer(
             #     query=output,
             #     query_pos=query_pos,
