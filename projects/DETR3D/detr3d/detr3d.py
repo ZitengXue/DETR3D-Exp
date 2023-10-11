@@ -230,6 +230,31 @@ class DETR3D(MVXTwoStageDetector):
         batch_input_metas = [item.metainfo for item in batch_data_samples]
         batch_input_metas = self.add_lidar2img(batch_input_metas)
         img_feats = self.extract_feat(batch_inputs_dict, batch_input_metas)
+        bsz=len(batch_data_samples)
+        #文本预处理
+        text_prompts=[
+        'car', 'truck', 'trailer', 'bus', 'construction vehicle', 'bicycle',
+        'motorcycle', 'pedestrian', 'traffic cone', 'barrier']
+
+        new_text_prompts=[]
+        positive_maps=[]
+        tokenized, caption_string, tokens_positive, _ = \
+                self.get_tokens_and_prompts(
+                    text_prompts, True)
+        new_text_prompts = [caption_string] * len(batch_data_samples) 
+        text_dict = self.language_model(new_text_prompts)
+        for key, value in text_dict.items():
+            text_dict[key] = torch.cat([value] * 6, dim=0)
+        if self.text_feat_map is not None:
+            text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
+        #####################################################################
+        encoder_inputs_dict = self.pre_transformer(
+            img_feats, batch_data_samples)
+
+        memory = self.forward_encoder(
+            **encoder_inputs_dict, text_dict=text_dict)
+        del img_feats
+        img_feats = self.restore_img_feats(memory, encoder_inputs_dict['spatial_shapes'], encoder_inputs_dict['level_start_index'])
         outs = self.pts_bbox_head(img_feats, batch_input_metas)
 
         results_list_3d = self.pts_bbox_head.predict_by_feat(
