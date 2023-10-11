@@ -231,7 +231,38 @@ class DETR3D(MVXTwoStageDetector):
         batch_input_metas = [item.metainfo for item in batch_data_samples]
         batch_input_metas = self.add_lidar2img(batch_input_metas)
         img_feats = self.extract_feat(batch_inputs_dict, batch_input_metas)
-        outs = self.pts_bbox_head(img_feats, batch_input_metas)
+        bsz=len(batch_data_samples)
+        #文本预处理
+        text_prompts=[
+        'car', 'truck', 'trailer', 'bus', 'construction vehicle', 'bicycle',
+        'motorcycle', 'pedestrian', 'traffic cone', 'barrier']
+        batch_gt_instances_3d = [
+            item.gt_instances_3d for item in batch_data_samples
+        ]
+        new_text_prompts=[]
+        positive_maps=[]
+        tokenized, caption_string, tokens_positive, _ = \
+                self.get_tokens_and_prompts(
+                    text_prompts, True)
+        new_text_prompts = [caption_string] * len(batch_data_samples) 
+        gt_labels=[
+                data_sample.labels_3d 
+                for data_sample in batch_gt_instances_3d
+                ]
+        for gt_label in gt_labels:
+            new_tokens_positive = [
+                    tokens_positive[label] for label in gt_label
+                ]
+            _, positive_map = self.get_positive_map(
+                    tokenized, new_tokens_positive)
+            positive_maps.append(positive_map)
+
+        text_dict = self.language_model(new_text_prompts)
+        if self.text_feat_map is not None:
+            text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
+        memory_text=text_dict['embedded']
+
+        outs = self.pts_bbox_head(img_feats,memory_text, batch_input_metas)
 
         results_list_3d = self.pts_bbox_head.predict_by_feat(
             outs, batch_input_metas, **kwargs)
