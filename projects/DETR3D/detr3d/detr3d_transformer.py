@@ -146,6 +146,7 @@ class Detr3DTransformerDecoder(TransformerLayerSequence):
                 *args,
                 reference_points=None,
                 reg_branches=None,
+                memory_text=None,
                 **kwargs):
         """Forward function for `Detr3DTransformerDecoder`.
         Args:
@@ -174,6 +175,7 @@ class Detr3DTransformerDecoder(TransformerLayerSequence):
                 output,
                 *args,
                 reference_points=reference_points_input,
+                memory_text=memory_text,
                 **kwargs)
             output = output.permute(1, 0, 2)
             if reg_branches is not None:
