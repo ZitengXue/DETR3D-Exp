@@ -23,15 +23,25 @@ python tools/create_data.py nuscenes --root-path ./data/nuscenes --out-dir ./dat
 ```
 which should look like:
 |--nuscnes
+
   |--maps
+
   |--samples
+
   |--sweeps
+
   |--v1.0-test
+
   |--v1.0-trainval
+
   |--nuscenes_gt_database
+
   |--nuscenes_dbinfos_train.pkl
+
   |--nuscenes_infos_test.pkl
+
   |--nuscenes_infos_val.pkl
+  
   |--nuscenes_infos_train.pkl
 
 2. For example, to train DETR3D on 2 GPUs with bert encoder and half data, please use

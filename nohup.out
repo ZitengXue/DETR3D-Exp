@@ -6866,3 +6866,925 @@ RuntimeError: Address already in use
 *****************************************
 Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
 *****************************************
+/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/launch.py:163: DeprecationWarning: The 'warn' method is deprecated, use 'warning' instead
+  logger.warn(
+The module torch.distributed.launch is deprecated and going to be removed in future.Migrate to torch.distributed.run
+WARNING:torch.distributed.run:--use_env is deprecated and will be removed in future releases.
+ Please read local_rank from `os.environ('LOCAL_RANK')` instead.
+INFO:torch.distributed.launcher.api:Starting elastic_operator with launch configs:
+  entrypoint       : tools/train.py
+  min_nodes        : 1
+  max_nodes        : 1
+  nproc_per_node   : 2
+  run_id           : none
+  rdzv_backend     : static
+  rdzv_endpoint    : 127.0.0.1:29500
+  rdzv_configs     : {'rank': 0, 'timeout': 900}
+  max_restarts     : 3
+  monitor_interval : 5
+  log_dir          : None
+  metrics_cfg      : {}
+
+INFO:torch.distributed.elastic.agent.server.local_elastic_agent:log directory set to: /tmp/torchelastic_791ktju1/none_j4s287x2
+INFO:torch.distributed.elastic.agent.server.api:[default] starting workers for entrypoint: python
+INFO:torch.distributed.elastic.agent.server.api:[default] Rendezvous'ing worker group
+{"name": "torchelastic.worker.status.FAILED", "source": "AGENT", "timestamp": 0, "metadata": {"run_id": "none", "global_rank": null, "group_rank": null, "worker_id": null, "role": "default", "hostname": "ys-SYS", "state": "FAILED", "total_run_time": 0, "rdzv_backend": "static", "raw_error": "Traceback (most recent call last):\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/launcher/api.py\", line 238, in launch_agent\n    result = agent.run()\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py\", line 125, in wrapper\n    result = f(*args, **kwargs)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py\", line 700, in run\n    result = self._invoke_run(role)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py\", line 822, in _invoke_run\n    self._initialize_workers(self._worker_group)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py\", line 125, in wrapper\n    result = f(*args, **kwargs)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py\", line 670, in _initialize_workers\n    self._rendezvous(worker_group)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py\", line 125, in wrapper\n    result = f(*args, **kwargs)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py\", line 530, in _rendezvous\n    store, group_rank, group_world_size = spec.rdzv_handler.next_rendezvous()\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/rendezvous/static_tcp_rendezvous.py\", line 55, in next_rendezvous\n    self._store = TCPStore(\nRuntimeError: Address already in use\n", "metadata": "{\"group_world_size\": null, \"entry_point\": \"python\"}", "agent_restarts": 0}}
+ERROR:torch.distributed.elastic.multiprocessing.errors.error_handler:{
+  "message": {
+    "message": "RuntimeError: Address already in use",
+    "extraInfo": {
+      "py_callstack": "Traceback (most recent call last):\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py\", line 348, in wrapper\n    return f(*args, **kwargs)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/launcher/api.py\", line 238, in launch_agent\n    result = agent.run()\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py\", line 125, in wrapper\n    result = f(*args, **kwargs)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py\", line 700, in run\n    result = self._invoke_run(role)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py\", line 822, in _invoke_run\n    self._initialize_workers(self._worker_group)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py\", line 125, in wrapper\n    result = f(*args, **kwargs)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py\", line 670, in _initialize_workers\n    self._rendezvous(worker_group)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py\", line 125, in wrapper\n    result = f(*args, **kwargs)\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py\", line 530, in _rendezvous\n    store, group_rank, group_world_size = spec.rdzv_handler.next_rendezvous()\n  File \"/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/rendezvous/static_tcp_rendezvous.py\", line 55, in next_rendezvous\n    self._store = TCPStore(\nRuntimeError: Address already in use\n",
+      "timestamp": "1696990093"
+    }
+  }
+}
+Traceback (most recent call last):
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/runpy.py", line 194, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/launch.py", line 173, in <module>
+    main()
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/launch.py", line 169, in main
+    run(args)
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/run.py", line 621, in run
+    elastic_launch(
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 116, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 348, in wrapper
+    return f(*args, **kwargs)
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 238, in launch_agent
+    result = agent.run()
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py", line 125, in wrapper
+    result = f(*args, **kwargs)
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 700, in run
+    result = self._invoke_run(role)
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 822, in _invoke_run
+    self._initialize_workers(self._worker_group)
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py", line 125, in wrapper
+    result = f(*args, **kwargs)
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 670, in _initialize_workers
+    self._rendezvous(worker_group)
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py", line 125, in wrapper
+    result = f(*args, **kwargs)
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 530, in _rendezvous
+    store, group_rank, group_world_size = spec.rdzv_handler.next_rendezvous()
+  File "/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/rendezvous/static_tcp_rendezvous.py", line 55, in next_rendezvous
+    self._store = TCPStore(
+RuntimeError: Address already in use
+*****************************************
+Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+*****************************************
+/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/launch.py:163: DeprecationWarning: The 'warn' method is deprecated, use 'warning' instead
+  logger.warn(
+The module torch.distributed.launch is deprecated and going to be removed in future.Migrate to torch.distributed.run
+WARNING:torch.distributed.run:--use_env is deprecated and will be removed in future releases.
+ Please read local_rank from `os.environ('LOCAL_RANK')` instead.
+INFO:torch.distributed.launcher.api:Starting elastic_operator with launch configs:
+  entrypoint       : tools/train.py
+  min_nodes        : 1
+  max_nodes        : 1
+  nproc_per_node   : 2
+  run_id           : none
+  rdzv_backend     : static
+  rdzv_endpoint    : 127.0.0.1:29500
+  rdzv_configs     : {'rank': 0, 'timeout': 900}
+  max_restarts     : 3
+  monitor_interval : 5
+  log_dir          : None
+  metrics_cfg      : {}
+
+INFO:torch.distributed.elastic.agent.server.local_elastic_agent:log directory set to: /tmp/torchelastic_mk5g5qri/none_4sbt8gvq
+INFO:torch.distributed.elastic.agent.server.api:[default] starting workers for entrypoint: python
+INFO:torch.distributed.elastic.agent.server.api:[default] Rendezvous'ing worker group
+/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/torch/distributed/elastic/utils/store.py:52: FutureWarning: This is an experimental API and will be changed in future.
+  warnings.warn(
+INFO:torch.distributed.elastic.agent.server.api:[default] Rendezvous complete for workers. Result:
+  restart_count=0
+  master_addr=127.0.0.1
+  master_port=29500
+  group_rank=0
+  group_world_size=1
+  local_ranks=[0, 1]
+  role_ranks=[0, 1]
+  global_ranks=[0, 1]
+  role_world_sizes=[2, 2]
+  global_world_sizes=[2, 2]
+
+INFO:torch.distributed.elastic.agent.server.api:[default] Starting worker group
+INFO:torch.distributed.elastic.multiprocessing:Setting worker0 reply file to: /tmp/torchelastic_mk5g5qri/none_4sbt8gvq/attempt_0/0/error.json
+INFO:torch.distributed.elastic.multiprocessing:Setting worker1 reply file to: /tmp/torchelastic_mk5g5qri/none_4sbt8gvq/attempt_0/1/error.json
+/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+/home/xzt/miniconda3/envs/detr/lib/python3.8/site-packages/mmengine/utils/dl_utils/setup_env.py:56: UserWarning: Setting MKL_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed.
+  warnings.warn(
+10/11 10:09:22 - mmengine - INFO - 
+------------------------------------------------------------
+System environment:
+    sys.platform: linux
+    Python: 3.8.18 (default, Sep 11 2023, 13:40:15) [GCC 11.2.0]
+    CUDA available: True
+    numpy_random_seed: 1713811952
+    GPU 0,1: NVIDIA GeForce RTX 4090
+    CUDA_HOME: /usr/local/cuda-11.7
+    NVCC: Cuda compilation tools, release 11.7, V11.7.64
+    GCC: gcc (Ubuntu 9.5.0-3ubuntu1) 9.5.0
+    PyTorch: 1.9.0+cu111
+    PyTorch compiling details: PyTorch built with:
+  - GCC 7.3
+  - C++ Version: 201402
+  - Intel(R) Math Kernel Library Version 2020.0.0 Product Build 20191122 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v2.1.2 (Git Hash 98be7e8afa711dc9b66c8ff3504129cb82013cdb)
+  - OpenMP 201511 (a.k.a. OpenMP 4.5)
+  - NNPACK is enabled
+  - CPU capability usage: AVX2
+  - CUDA Runtime 11.1
+  - NVCC architecture flags: -gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86
+  - CuDNN 8.0.5
+  - Magma 2.5.2
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=11.1, CUDNN_VERSION=8.0.5, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.9.0, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
+
+    TorchVision: 0.10.0+cu111
+    OpenCV: 4.8.0
+    MMEngine: 0.8.4
+
+Runtime environment:
+    cudnn_benchmark: False
+    mp_cfg: {'mp_start_method': 'fork', 'opencv_num_threads': 0}
+    dist_cfg: {'backend': 'nccl'}
+    seed: 1713811952
+    Distributed launcher: pytorch
+    Distributed training: True
+    GPU number: 2
+------------------------------------------------------------
+
+10/11 10:09:23 - mmengine - INFO - Config:
+backend_args = None
+class_names = [
+    'car',
+    'truck',
+    'construction_vehicle',
+    'bus',
+    'trailer',
+    'barrier',
+    'motorcycle',
+    'bicycle',
+    'pedestrian',
+    'traffic_cone',
+]
+custom_imports = dict(imports=[
+    'projects.DETR3D.detr3d',
+])
+data_prefix = dict(
+    CAM_BACK='samples/CAM_BACK',
+    CAM_BACK_LEFT='samples/CAM_BACK_LEFT',
+    CAM_BACK_RIGHT='samples/CAM_BACK_RIGHT',
+    CAM_FRONT='samples/CAM_FRONT',
+    CAM_FRONT_LEFT='samples/CAM_FRONT_LEFT',
+    CAM_FRONT_RIGHT='samples/CAM_FRONT_RIGHT',
+    pts='')
+data_root = 'data/nuscenes/'
+dataset_type = 'NuScenesDataset'
+default_hooks = dict(
+    checkpoint=dict(
+        _scope_='mmdet3d',
+        interval=1,
+        max_keep_ckpts=1,
+        save_last=True,
+        type='CheckpointHook'),
+    logger=dict(_scope_='mmdet3d', interval=50, type='LoggerHook'),
+    param_scheduler=dict(_scope_='mmdet3d', type='ParamSchedulerHook'),
+    sampler_seed=dict(_scope_='mmdet3d', type='DistSamplerSeedHook'),
+    timer=dict(_scope_='mmdet3d', type='IterTimerHook'),
+    visualization=dict(_scope_='mmdet3d', type='Det3DVisualizationHook'))
+default_scope = 'mmdet3d'
+env_cfg = dict(
+    cudnn_benchmark=False,
+    dist_cfg=dict(backend='nccl'),
+    mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0))
+img_norm_cfg = dict(
+    bgr_to_rgb=False, mean=[
+        103.53,
+        116.28,
+        123.675,
+    ], std=[
+        1.0,
+        1.0,
+        1.0,
+    ])
+input_modality = dict(
+    use_camera=True,
+    use_external=False,
+    use_lidar=False,
+    use_map=False,
+    use_radar=False)
+lang_model_name = 'bert-base-uncased'
+launcher = 'pytorch'
+load_from = 'pretrained/fcos3d.pth'
+log_level = 'INFO'
+log_processor = dict(
+    _scope_='mmdet3d', by_epoch=True, type='LogProcessor', window_size=50)
+metainfo = dict(classes=[
+    'car',
+    'truck',
+    'construction_vehicle',
+    'bus',
+    'trailer',
+    'barrier',
+    'motorcycle',
+    'bicycle',
+    'pedestrian',
+    'traffic_cone',
+])
+model = dict(
+    data_preprocessor=dict(
+        bgr_to_rgb=False,
+        mean=[
+            103.53,
+            116.28,
+            123.675,
+        ],
+        pad_size_divisor=32,
+        std=[
+            1.0,
+            1.0,
+            1.0,
+        ],
+        type='Det3DDataPreprocessor'),
+    encoder=dict(
+        fusion_layer_cfg=dict(
+            embed_dim=1024,
+            init_values=0.0001,
+            l_dim=256,
+            num_heads=4,
+            v_dim=256),
+        layer_cfg=dict(
+            ffn_cfg=dict(
+                embed_dims=256, feedforward_channels=2048, ffn_drop=0.0),
+            self_attn_cfg=dict(dropout=0.0, embed_dims=256, num_levels=4)),
+        num_cp=6,
+        num_layers=6,
+        text_layer_cfg=dict(
+            ffn_cfg=dict(
+                embed_dims=256, feedforward_channels=1024, ffn_drop=0.0),
+            self_attn_cfg=dict(dropout=0.0, embed_dims=256, num_heads=4))),
+    img_backbone=dict(
+        dcn=dict(deform_groups=1, fallback_on_stride=False, type='DCNv2'),
+        depth=50,
+        frozen_stages=1,
+        norm_cfg=dict(requires_grad=False, type='BN2d'),
+        norm_eval=True,
+        num_stages=4,
+        out_indices=(
+            0,
+            1,
+            2,
+            3,
+        ),
+        stage_with_dcn=(
+            False,
+            False,
+            True,
+            True,
+        ),
+        style='caffe',
+        type='mmdet.ResNet'),
+    img_neck=dict(
+        add_extra_convs='on_output',
+        in_channels=[
+            256,
+            512,
+            1024,
+            2048,
+        ],
+        num_outs=4,
+        out_channels=256,
+        relu_before_extra_convs=True,
+        start_level=1,
+        type='mmdet.FPN'),
+    language_model=dict(
+        add_pooling_layer=False,
+        name='bert-base-uncased',
+        pad_to_max=False,
+        special_tokens_list=[
+            '[CLS]',
+            '[SEP]',
+            '.',
+            '?',
+        ],
+        type='BertModel',
+        use_sub_sentence_represent=True),
+    positional_encoding_single=dict(
+        normalize=True, num_feats=128, offset=0.0, temperature=20),
+    pts_bbox_head=dict(
+        as_two_stage=False,
+        bbox_coder=dict(
+            max_num=300,
+            num_classes=10,
+            pc_range=[
+                -51.2,
+                -51.2,
+                -5.0,
+                51.2,
+                51.2,
+                3.0,
+            ],
+            post_center_range=[
+                -61.2,
+                -61.2,
+                -10.0,
+                61.2,
+                61.2,
+                10.0,
+            ],
+            type='NMSFreeCoder',
+            voxel_size=[
+                0.2,
+                0.2,
+                8,
+            ]),
+        in_channels=256,
+        loss_bbox=dict(loss_weight=0.25, type='mmdet.L1Loss'),
+        loss_cls=dict(
+            alpha=0.25,
+            gamma=2.0,
+            loss_weight=2.0,
+            type='mmdet.FocalLoss',
+            use_sigmoid=True),
+        loss_iou=dict(loss_weight=0.0, type='mmdet.GIoULoss'),
+        num_classes=10,
+        num_query=900,
+        positional_encoding=dict(
+            normalize=True,
+            num_feats=128,
+            offset=-0.5,
+            type='mmdet.SinePositionalEncoding'),
+        sync_cls_avg_factor=True,
+        transformer=dict(
+            decoder=dict(
+                num_layers=6,
+                return_intermediate=True,
+                transformerlayers=dict(
+                    attn_cfgs=[
+                        dict(
+                            dropout=0.1,
+                            embed_dims=256,
+                            num_heads=8,
+                            type='MultiheadAttention'),
+                        dict(
+                            dropout=0.0,
+                            embed_dims=256,
+                            num_heads=8,
+                            type='MultiheadAttention'),
+                        dict(
+                            embed_dims=256,
+                            num_points=1,
+                            pc_range=[
+                                -51.2,
+                                -51.2,
+                                -5.0,
+                                51.2,
+                                51.2,
+                                3.0,
+                            ],
+                            type='Detr3DCrossAtten'),
+                    ],
+                    feedforward_channels=512,
+                    ffn_dropout=0.1,
+                    operation_order=(
+                        'self_attn',
+                        'norm',
+                        'self_attn_text',
+                        'norm',
+                        'cross_attn',
+                        'norm',
+                        'ffn',
+                        'norm',
+                    ),
+                    type='mmdet.DetrTransformerDecoderLayer'),
+                type='Detr3DTransformerDecoder'),
+            type='Detr3DTransformer'),
+        type='DETR3DHead',
+        with_box_refine=True),
+    train_cfg=dict(
+        pts=dict(
+            assigner=dict(
+                cls_cost=dict(type='mmdet.FocalLossCost', weight=2.0),
+                iou_cost=dict(type='mmdet.IoUCost', weight=0.0),
+                pc_range=[
+                    -51.2,
+                    -51.2,
+                    -5.0,
+                    51.2,
+                    51.2,
+                    3.0,
+                ],
+                reg_cost=dict(type='BBox3DL1Cost', weight=0.25),
+                type='HungarianAssigner3D'),
+            grid_size=[
+                512,
+                512,
+                1,
+            ],
+            out_size_factor=4,
+            point_cloud_range=[
+                -51.2,
+                -51.2,
+                -5.0,
+                51.2,
+                51.2,
+                3.0,
+            ],
+            voxel_size=[
+                0.2,
+                0.2,
+                8,
+            ])),
+    type='DETR3D',
+    use_grid_mask=True)
+optim_wrapper = dict(
+    clip_grad=dict(max_norm=35, norm_type=2),
+    optimizer=dict(lr=0.0002, type='AdamW', weight_decay=0.01),
+    paramwise_cfg=dict(custom_keys=dict(img_backbone=dict(lr_mult=0.1))),
+    type='OptimWrapper')
+param_scheduler = [
+    dict(
+        begin=0,
+        by_epoch=False,
+        end=500,
+        start_factor=0.3333333333333333,
+        type='LinearLR'),
+    dict(
+        T_max=24,
+        begin=0,
+        by_epoch=True,
+        end=24,
+        eta_min_ratio=0.001,
+        type='CosineAnnealingLR'),
+]
+point_cloud_range = [
+    -51.2,
+    -51.2,
+    -5.0,
+    51.2,
+    51.2,
+    3.0,
+]
+resume = False
+test_cfg = dict(type='TestLoop')
+test_dataloader = dict(
+    batch_size=1,
+    dataset=dict(
+        ann_file='nuscenes_infos_val.pkl',
+        backend_args=None,
+        box_type_3d='LiDAR',
+        data_prefix=dict(
+            CAM_BACK='samples/CAM_BACK',
+            CAM_BACK_LEFT='samples/CAM_BACK_LEFT',
+            CAM_BACK_RIGHT='samples/CAM_BACK_RIGHT',
+            CAM_FRONT='samples/CAM_FRONT',
+            CAM_FRONT_LEFT='samples/CAM_FRONT_LEFT',
+            CAM_FRONT_RIGHT='samples/CAM_FRONT_RIGHT',
+            pts=''),
+        data_root='data/nuscenes/',
+        load_type='frame_based',
+        metainfo=dict(classes=[
+            'car',
+            'truck',
+            'construction_vehicle',
+            'bus',
+            'trailer',
+            'barrier',
+            'motorcycle',
+            'bicycle',
+            'pedestrian',
+            'traffic_cone',
+        ]),
+        modality=dict(
+            use_camera=True,
+            use_external=False,
+            use_lidar=False,
+            use_map=False,
+            use_radar=False),
+        pipeline=[
+            dict(
+                backend_args=None,
+                num_views=6,
+                to_float32=True,
+                type='LoadMultiViewImageFromFiles'),
+            dict(
+                transforms=[
+                    dict(
+                        keep_ratio=True,
+                        ratio_range=(
+                            1.0,
+                            1.0,
+                        ),
+                        scale=(
+                            1600,
+                            900,
+                        ),
+                        type='RandomResize3D'),
+                ],
+                type='MultiViewWrapper'),
+            dict(keys=[
+                'img',
+            ], type='Pack3DDetInputs'),
+        ],
+        test_mode=True,
+        type='NuScenesDataset'),
+    drop_last=False,
+    num_workers=4,
+    persistent_workers=True,
+    sampler=dict(shuffle=False, type='DefaultSampler'))
+test_evaluator = dict(
+    ann_file='data/nuscenes/nuscenes_infos_val.pkl',
+    backend_args=None,
+    data_root='data/nuscenes/',
+    metric='bbox',
+    type='NuScenesMetric')
+test_pipeline = [
+    dict(
+        backend_args=None,
+        num_views=6,
+        to_float32=True,
+        type='LoadMultiViewImageFromFiles'),
+    dict(
+        transforms=[
+            dict(
+                keep_ratio=True,
+                ratio_range=(
+                    1.0,
+                    1.0,
+                ),
+                scale=(
+                    1600,
+                    900,
+                ),
+                type='RandomResize3D'),
+        ],
+        type='MultiViewWrapper'),
+    dict(keys=[
+        'img',
+    ], type='Pack3DDetInputs'),
+]
+test_transforms = [
+    dict(
+        keep_ratio=True,
+        ratio_range=(
+            1.0,
+            1.0,
+        ),
+        scale=(
+            1600,
+            900,
+        ),
+        type='RandomResize3D'),
+]
+total_epochs = 24
+train_cfg = dict(max_epochs=24, type='EpochBasedTrainLoop', val_interval=2)
+train_dataloader = dict(
+    batch_size=1,
+    dataset=dict(
+        ann_file='nuscenes_infos_train.pkl',
+        backend_args=None,
+        box_type_3d='LiDAR',
+        data_prefix=dict(
+            CAM_BACK='samples/CAM_BACK',
+            CAM_BACK_LEFT='samples/CAM_BACK_LEFT',
+            CAM_BACK_RIGHT='samples/CAM_BACK_RIGHT',
+            CAM_FRONT='samples/CAM_FRONT',
+            CAM_FRONT_LEFT='samples/CAM_FRONT_LEFT',
+            CAM_FRONT_RIGHT='samples/CAM_FRONT_RIGHT',
+            pts=''),
+        data_root='data/nuscenes/',
+        load_interval=2,
+        load_type='frame_based',
+        metainfo=dict(classes=[
+            'car',
+            'truck',
+            'construction_vehicle',
+            'bus',
+            'trailer',
+            'barrier',
+            'motorcycle',
+            'bicycle',
+            'pedestrian',
+            'traffic_cone',
+        ]),
+        modality=dict(
+            use_camera=True,
+            use_external=False,
+            use_lidar=False,
+            use_map=False,
+            use_radar=False),
+        pipeline=[
+            dict(
+                backend_args=None,
+                num_views=6,
+                to_float32=True,
+                type='LoadMultiViewImageFromFiles'),
+            dict(
+                type='LoadAnnotations3D',
+                with_attr_label=False,
+                with_bbox_3d=True,
+                with_label_3d=True),
+            dict(
+                transforms=[
+                    dict(type='PhotoMetricDistortion3D'),
+                    dict(
+                        keep_ratio=True,
+                        ratio_range=(
+                            1.0,
+                            1.0,
+                        ),
+                        scale=(
+                            1600,
+                            900,
+                        ),
+                        type='RandomResize3D'),
+                ],
+                type='MultiViewWrapper'),
+            dict(
+                point_cloud_range=[
+                    -51.2,
+                    -51.2,
+                    -5.0,
+                    51.2,
+                    51.2,
+                    3.0,
+                ],
+                type='ObjectRangeFilter'),
+            dict(
+                classes=[
+                    'car',
+                    'truck',
+                    'construction_vehicle',
+                    'bus',
+                    'trailer',
+                    'barrier',
+                    'motorcycle',
+                    'bicycle',
+                    'pedestrian',
+                    'traffic_cone',
+                ],
+                type='ObjectNameFilter'),
+            dict(
+                keys=[
+                    'img',
+                    'gt_bboxes_3d',
+                    'gt_labels_3d',
+                ],
+                type='Pack3DDetInputs'),
+        ],
+        test_mode=False,
+        type='NuScenesDataset'),
+    drop_last=False,
+    num_workers=4,
+    persistent_workers=True,
+    sampler=dict(shuffle=True, type='DefaultSampler'))
+train_pipeline = [
+    dict(
+        backend_args=None,
+        num_views=6,
+        to_float32=True,
+        type='LoadMultiViewImageFromFiles'),
+    dict(
+        type='LoadAnnotations3D',
+        with_attr_label=False,
+        with_bbox_3d=True,
+        with_label_3d=True),
+    dict(
+        transforms=[
+            dict(type='PhotoMetricDistortion3D'),
+            dict(
+                keep_ratio=True,
+                ratio_range=(
+                    1.0,
+                    1.0,
+                ),
+                scale=(
+                    1600,
+                    900,
+                ),
+                type='RandomResize3D'),
+        ],
+        type='MultiViewWrapper'),
+    dict(
+        point_cloud_range=[
+            -51.2,
+            -51.2,
+            -5.0,
+            51.2,
+            51.2,
+            3.0,
+        ],
+        type='ObjectRangeFilter'),
+    dict(
+        classes=[
+            'car',
+            'truck',
+            'construction_vehicle',
+            'bus',
+            'trailer',
+            'barrier',
+            'motorcycle',
+            'bicycle',
+            'pedestrian',
+            'traffic_cone',
+        ],
+        type='ObjectNameFilter'),
+    dict(
+        keys=[
+            'img',
+            'gt_bboxes_3d',
+            'gt_labels_3d',
+        ], type='Pack3DDetInputs'),
+]
+train_transforms = [
+    dict(type='PhotoMetricDistortion3D'),
+    dict(
+        keep_ratio=True,
+        ratio_range=(
+            1.0,
+            1.0,
+        ),
+        scale=(
+            1600,
+            900,
+        ),
+        type='RandomResize3D'),
+]
+val_cfg = dict(type='ValLoop')
+val_dataloader = dict(
+    batch_size=1,
+    dataset=dict(
+        ann_file='nuscenes_infos_val.pkl',
+        backend_args=None,
+        box_type_3d='LiDAR',
+        data_prefix=dict(
+            CAM_BACK='samples/CAM_BACK',
+            CAM_BACK_LEFT='samples/CAM_BACK_LEFT',
+            CAM_BACK_RIGHT='samples/CAM_BACK_RIGHT',
+            CAM_FRONT='samples/CAM_FRONT',
+            CAM_FRONT_LEFT='samples/CAM_FRONT_LEFT',
+            CAM_FRONT_RIGHT='samples/CAM_FRONT_RIGHT',
+            pts=''),
+        data_root='data/nuscenes/',
+        load_type='frame_based',
+        metainfo=dict(classes=[
+            'car',
+            'truck',
+            'construction_vehicle',
+            'bus',
+            'trailer',
+            'barrier',
+            'motorcycle',
+            'bicycle',
+            'pedestrian',
+            'traffic_cone',
+        ]),
+        modality=dict(
+            use_camera=True,
+            use_external=False,
+            use_lidar=False,
+            use_map=False,
+            use_radar=False),
+        pipeline=[
+            dict(
+                backend_args=None,
+                num_views=6,
+                to_float32=True,
+                type='LoadMultiViewImageFromFiles'),
+            dict(
+                transforms=[
+                    dict(
+                        keep_ratio=True,
+                        ratio_range=(
+                            1.0,
+                            1.0,
+                        ),
+                        scale=(
+                            1600,
+                            900,
+                        ),
+                        type='RandomResize3D'),
+                ],
+                type='MultiViewWrapper'),
+            dict(keys=[
+                'img',
+            ], type='Pack3DDetInputs'),
+        ],
+        test_mode=True,
+        type='NuScenesDataset'),
+    drop_last=False,
+    num_workers=4,
+    persistent_workers=True,
+    sampler=dict(shuffle=False, type='DefaultSampler'))
+val_evaluator = dict(
+    ann_file='data/nuscenes/nuscenes_infos_val.pkl',
+    backend_args=None,
+    data_root='data/nuscenes/',
+    metric='bbox',
+    type='NuScenesMetric')
+vis_backends = [
+    dict(type='TensorboardVisBackend'),
+]
+visualizer = dict(
+    name='visualizer',
+    type='Det3DLocalVisualizer',
+    vis_backends=[
+        dict(type='TensorboardVisBackend'),
+    ])
+voxel_size = [
+    0.2,
+    0.2,
+    8,
+]
+work_dir = './work_dirs/detr3d_r50_bert_gridmask_halfdata_decoder'
+
+10/11 10:09:32 - mmengine - INFO - Autoplay mode, press [SPACE] to pause.
+10/11 10:09:32 - mmengine - INFO - Hooks will be executed in the following order:
+before_run:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+before_train:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_train_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) DistSamplerSeedHook                
+ -------------------- 
+before_train_iter:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_train_iter:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+after_train_epoch:
+(NORMAL      ) IterTimerHook                      
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_val:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+before_val_epoch:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+before_val_iter:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_val_iter:
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) Det3DVisualizationHook             
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_val_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+after_val:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+after_train:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_test:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+before_test_epoch:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+before_test_iter:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_test_iter:
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) Det3DVisualizationHook             
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_test_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_test:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+after_run:
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
