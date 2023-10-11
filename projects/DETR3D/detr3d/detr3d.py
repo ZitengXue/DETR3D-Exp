@@ -236,31 +236,23 @@ class DETR3D(MVXTwoStageDetector):
         text_prompts=[
         'car', 'truck', 'trailer', 'bus', 'construction vehicle', 'bicycle',
         'motorcycle', 'pedestrian', 'traffic cone', 'barrier']
-        batch_gt_instances_3d = [
-            item.gt_instances_3d for item in batch_data_samples
-        ]
+
         new_text_prompts=[]
         positive_maps=[]
         tokenized, caption_string, tokens_positive, _ = \
                 self.get_tokens_and_prompts(
                     text_prompts, True)
+        print('----------------------------------------------------')
+        print(len(batch_data_samples))
+        print('----------------------------------------------------')
         new_text_prompts = [caption_string] * len(batch_data_samples) 
-        gt_labels=[
-                data_sample.labels_3d 
-                for data_sample in batch_gt_instances_3d
-                ]
-        for gt_label in gt_labels:
-            new_tokens_positive = [
-                    tokens_positive[label] for label in gt_label
-                ]
-            _, positive_map = self.get_positive_map(
-                    tokenized, new_tokens_positive)
-            positive_maps.append(positive_map)
-
+        print()
         text_dict = self.language_model(new_text_prompts)
         if self.text_feat_map is not None:
             text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
         memory_text=text_dict['embedded']
+        if isinstance(memory_text,list):
+            memory_text=torch.cat(memory_text,dim=0)
 
         outs = self.pts_bbox_head(img_feats,memory_text, batch_input_metas)
 
