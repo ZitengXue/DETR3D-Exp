@@ -283,7 +283,7 @@ param_scheduler = [
 total_epochs = 24
 
 train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=total_epochs, val_interval=2)
+    type='EpochBasedTrainLoop', max_epochs=total_epochs, val_interval=4)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 default_hooks = dict(

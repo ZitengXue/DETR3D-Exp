@@ -242,11 +242,8 @@ class DETR3D(MVXTwoStageDetector):
         tokenized, caption_string, tokens_positive, _ = \
                 self.get_tokens_and_prompts(
                     text_prompts, True)
-        print('----------------------------------------------------')
-        print(len(batch_data_samples))
-        print('----------------------------------------------------')
         new_text_prompts = [caption_string] * len(batch_data_samples) 
-        print()
+
         text_dict = self.language_model(new_text_prompts)
         if self.text_feat_map is not None:
             text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
@@ -254,7 +251,7 @@ class DETR3D(MVXTwoStageDetector):
         if isinstance(memory_text,list):
             memory_text=torch.cat(memory_text,dim=0)
 
-        outs = self.pts_bbox_head(img_feats,memory_text, batch_input_metas)
+        outs = self.pts_bbox_head(img_feats, batch_input_metas,memory_text)
 
         results_list_3d = self.pts_bbox_head.predict_by_feat(
             outs, batch_input_metas, **kwargs)
