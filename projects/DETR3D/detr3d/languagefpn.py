@@ -1,264 +1,280 @@
-from typing import Dict, List, Optional
-from torch.nn.init import normal_
-import torch
-from torch import Tensor
+# Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Tuple, Union,Dict
 import torch.nn as nn
-from typing import Dict, Tuple, Union
-from .glip import (create_positive_map, create_positive_map_label_to_token,
-                   run_ner)
-from mmdet3d.models.detectors.mvx_two_stage import MVXTwoStageDetector
-from mmdet3d.registry import MODELS
-from mmdet3d.structures import Det3DDataSample
-from mmdet3d.structures.bbox_3d.utils import get_lidar2img
-from .grid_mask import GridMask
-from mmdet.structures import OptSampleList
 import torch.nn.functional as F
+from mmcv.cnn import ConvModule
+from mmengine.model import BaseModule
+from torch import Tensor
+import torch
+from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, MultiConfig, OptConfigType
 from ..layers.transformer.grounding_dino_layers import (
     GroundingDinoTransformerDecoder, GroundingDinoTransformerEncoder)
 from mmdet.models.layers.positional_encoding import SinePositionalEncoding
+from .glip import (create_positive_map, create_positive_map_label_to_token,
+                   run_ner)
+from mmdet.structures import OptSampleList
+
 @MODELS.register_module()
-class DETR3D(MVXTwoStageDetector):
-    """DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries
+class LFPN(BaseModule):
+    r"""Feature Pyramid Network.
+
+    This is an implementation of paper `Feature Pyramid Networks for Object
+    Detection <https://arxiv.org/abs/1612.03144>`_.
 
     Args:
-        data_preprocessor (dict or ConfigDict, optional): The pre-process
-            config of :class:`Det3DDataPreprocessor`. Defaults to None.
-        use_grid_mask (bool) : Data augmentation. Whether to mask out some
-            grids during extract_img_feat. Defaults to False.
-        img_backbone (dict, optional): Backbone of extracting
-            images feature. Defaults to None.
-        img_neck (dict, optional): Neck of extracting
-            image features. Defaults to None.
-        pts_bbox_head (dict, optional): Bboxes head of
-            detr3d. Defaults to None.
-        train_cfg (dict, optional): Train config of model.
-            Defaults to None.
-        test_cfg (dict, optional): Train config of model.
-            Defaults to None.
-        init_cfg (dict, optional): Initialize config of
-            model. Defaults to None.
+        in_channels (list[int]): Number of input channels per scale.
+        out_channels (int): Number of output channels (used at each scale).
+        num_outs (int): Number of output scales.
+        start_level (int): Index of the start input backbone level used to
+            build the feature pyramid. Defaults to 0.
+        end_level (int): Index of the end input backbone level (exclusive) to
+            build the feature pyramid. Defaults to -1, which means the
+            last level.
+        add_extra_convs (bool | str): If bool, it decides whether to add conv
+            layers on top of the original feature maps. Defaults to False.
+            If True, it is equivalent to `add_extra_convs='on_input'`.
+            If str, it specifies the source feature map of the extra convs.
+            Only the following options are allowed
+
+            - 'on_input': Last feat map of neck inputs (i.e. backbone feature).
+            - 'on_lateral': Last feature map after lateral convs.
+            - 'on_output': The last output feature map after fpn convs.
+        relu_before_extra_convs (bool): Whether to apply relu before the extra
+            conv. Defaults to False.
+        no_norm_on_lateral (bool): Whether to apply norm on lateral.
+            Defaults to False.
+        conv_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            convolution layer. Defaults to None.
+        norm_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            normalization layer. Defaults to None.
+        act_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            activation layer in ConvModule. Defaults to None.
+        upsample_cfg (:obj:`ConfigDict` or dict, optional): Config dict
+            for interpolate layer. Defaults to dict(mode='nearest').
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict]): Initialization config dict.
+
+    Example:
+        >>> import torch
+        >>> in_channels = [2, 3, 5, 7]
+        >>> scales = [340, 170, 84, 43]
+        >>> inputs = [torch.rand(1, c, s, s)
+        ...           for c, s in zip(in_channels, scales)]
+        >>> self = FPN(in_channels, 11, len(in_channels)).eval()
+        >>> outputs = self.forward(inputs)
+        >>> for i in range(len(outputs)):
+        ...     print(f'outputs[{i}].shape = {outputs[i].shape}')
+        outputs[0].shape = torch.Size([1, 11, 340, 340])
+        outputs[1].shape = torch.Size([1, 11, 170, 170])
+        outputs[2].shape = torch.Size([1, 11, 84, 84])
+        outputs[3].shape = torch.Size([1, 11, 43, 43])
     """
 
-    def __init__(self,
-                 data_preprocessor=None,
-                 use_grid_mask=False,
-                 img_backbone=None,
-                 img_neck=None,
-                 pts_bbox_head=None,
-                 train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None,
-                 language_model=None,
-                 encoder=None,
-                 positional_encoding_single=None,
-                 ):
-        super(DETR3D, self).__init__(
-            img_backbone=img_backbone,
-            img_neck=img_neck,
-            pts_bbox_head=pts_bbox_head,
-            train_cfg=train_cfg,
-            test_cfg=test_cfg,
-            data_preprocessor=data_preprocessor)
-        self.grid_mask = GridMask(
-            True, True, rotate=1, offset=False, ratio=0.5, mode=1, prob=0.7)
-        self.use_grid_mask = use_grid_mask
-        # self.language_cfg = language_model
-        # self.language_model = MODELS.build(self.language_cfg)
-        # self.text_feat_map = nn.Linear(
-        #     self.language_model.language_backbone.body.language_dim,
-        #     256,
-        #     bias=True)
-        # self._special_tokens = '. '
-        # self.positional_encoding = SinePositionalEncoding(
-        #     **positional_encoding_single)
-        # self.encoder = GroundingDinoTransformerEncoder(**encoder)
-        # self.level_embed = nn.Parameter(
-        #     torch.Tensor(4, 256))
-        # nn.init.constant_(self.text_feat_map.bias.data, 0)
-        # normal_(self.level_embed)
-        # nn.init.xavier_uniform_(self.text_feat_map.weight.data)
-    def extract_img_feat(self, img: Tensor,
-                         batch_input_metas: List[dict],batch_data_samples=None) -> List[Tensor]:
-        """Extract features from images.
+    def __init__(
+        self,
+        in_channels: List[int],
+        out_channels: int,
+        num_outs: int,
+        start_level: int = 0,
+        end_level: int = -1,
+        add_extra_convs: Union[bool, str] = False,
+        relu_before_extra_convs: bool = False,
+        no_norm_on_lateral: bool = False,
+        conv_cfg: OptConfigType = None,
+        norm_cfg: OptConfigType = None,
+        act_cfg: OptConfigType = None,
+        upsample_cfg: ConfigType = dict(mode='nearest'),
+        init_cfg: MultiConfig = dict(
+            type='Xavier', layer='Conv2d', distribution='uniform'),
+        language_model=None,
+        encoder=None,
+        positional_encoding_single=None,    
+    ) -> None:
+        super().__init__(init_cfg=init_cfg)
+        assert isinstance(in_channels, list)
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.num_ins = len(in_channels)
+        self.num_outs = num_outs
+        self.relu_before_extra_convs = relu_before_extra_convs
+        self.no_norm_on_lateral = no_norm_on_lateral
+        self.fp16_enabled = False
+        self.upsample_cfg = upsample_cfg.copy()
 
-        Args:
-            img (tensor): Batched multi-view image tensor with
-                shape (B, N, C, H, W).
-            batch_input_metas (list[dict]): Meta information of multiple inputs
-                in a batch.
-
-        Returns:
-             list[tensor]: multi-level image features.
-        """
-
-        B = img.size(0)
-        if img is not None:
-            input_shape = img.shape[-2:]  # bs nchw
-            # update real input shape of each single img
-            for img_meta in batch_input_metas:
-                img_meta.update(input_shape=input_shape)
-
-            if img.dim() == 5 and img.size(0) == 1:
-                img.squeeze_()
-            elif img.dim() == 5 and img.size(0) > 1:
-                B, N, C, H, W = img.size()
-                img = img.view(B * N, C, H, W)
-            if self.use_grid_mask:
-                img = self.grid_mask(img)  # mask out some grids
-            img_feats = self.img_backbone(img)
-            if isinstance(img_feats, dict):
-                img_feats = list(img_feats.values())
+        if end_level == -1 or end_level == self.num_ins - 1:
+            self.backbone_end_level = self.num_ins
+            assert num_outs >= self.num_ins - start_level
         else:
-            return None
-        if self.with_img_neck:
-            img_feats = self.img_neck(img_feats,batch_data_samples)
+            # if end_level is not the last level, no extra level is allowed
+            self.backbone_end_level = end_level + 1
+            assert end_level < self.num_ins
+            assert num_outs == end_level - start_level + 1
+        self.start_level = start_level
+        self.end_level = end_level
+        self.add_extra_convs = add_extra_convs
+        assert isinstance(add_extra_convs, (str, bool))
+        if isinstance(add_extra_convs, str):
+            # Extra_convs_source choices: 'on_input', 'on_lateral', 'on_output'
+            assert add_extra_convs in ('on_input', 'on_lateral', 'on_output')
+        elif add_extra_convs:  # True
+            self.add_extra_convs = 'on_input'
 
-        img_feats_reshaped = []
-        for img_feat in img_feats:
-            BN, C, H, W = img_feat.size()
-            img_feats_reshaped.append(img_feat.view(B, int(BN / B), C, H, W))
-        return img_feats_reshaped
+        self.lateral_convs = nn.ModuleList()
+        self.fpn_convs = nn.ModuleList()
+        self.language_cfg = language_model
+        self.language_model = MODELS.build(self.language_cfg)
+        self.text_feat_map = nn.Linear(
+            self.language_model.language_backbone.body.language_dim,
+            256,
+            bias=True)
+        self._special_tokens = '. '
+        self.positional_encoding = SinePositionalEncoding(
+            **positional_encoding_single)
+        self.encoder = GroundingDinoTransformerEncoder(**encoder)
+        nn.init.constant_(self.text_feat_map.bias.data, 0)
+        nn.init.xavier_uniform_(self.text_feat_map.weight.data)
+        for i in range(self.start_level, self.backbone_end_level):
+            l_conv = ConvModule(
+                in_channels[i],
+                out_channels,
+                1,
+                conv_cfg=conv_cfg,
+                norm_cfg=norm_cfg if not self.no_norm_on_lateral else None,
+                act_cfg=act_cfg,
+                inplace=False)
+            fpn_conv = ConvModule(
+                out_channels,
+                out_channels,
+                3,
+                padding=1,
+                conv_cfg=conv_cfg,
+                norm_cfg=norm_cfg,
+                act_cfg=act_cfg,
+                inplace=False)
 
-    def extract_feat(self, batch_inputs_dict: Dict,
-                     batch_input_metas: List[dict],batch_data_samples=None) -> List[Tensor]:
-        """Extract features from images.
+            self.lateral_convs.append(l_conv)
+            self.fpn_convs.append(fpn_conv)
 
-        Refer to self.extract_img_feat()
-        """
-        imgs = batch_inputs_dict.get('imgs', None)
-        img_feats = self.extract_img_feat(imgs, batch_input_metas,batch_data_samples)
-        return img_feats
+        # add extra conv layers (e.g., RetinaNet)
+        extra_levels = num_outs - self.backbone_end_level + self.start_level
+        if self.add_extra_convs and extra_levels >= 1:
+            for i in range(extra_levels):
+                if i == 0 and self.add_extra_convs == 'on_input':
+                    in_channels = self.in_channels[self.backbone_end_level - 1]
+                else:
+                    in_channels = out_channels
+                extra_fpn_conv = ConvModule(
+                    in_channels,
+                    out_channels,
+                    3,
+                    stride=2,
+                    padding=1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    act_cfg=act_cfg,
+                    inplace=False)
+                self.fpn_convs.append(extra_fpn_conv)
 
-    def _forward(self):
-        raise NotImplementedError('tensor mode is yet to add')
+    def forward(self, inputs: Tuple[Tensor],batch_data_samples: List[dict]=None) -> tuple:
+        """Forward function.
 
-    # original forward_train
-    def loss(self, batch_inputs_dict: Dict[List, Tensor],
-             batch_data_samples: List[Det3DDataSample],
-             **kwargs) -> List[Det3DDataSample]:
-        """
         Args:
-            batch_inputs_dict (dict): The model input dict which include
-                `imgs` keys.
-                - imgs (torch.Tensor): Tensor of batched multi-view  images.
-                    It has shape (B, N, C, H ,W)
-            batch_data_samples (List[obj:`Det3DDataSample`]): The Data Samples
-                It usually includes information such as `gt_instance_3d`.
+            inputs (tuple[Tensor]): Features from the upstream network, each
+                is a 4D-tensor.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
-
+            tuple: Feature maps, each is a 4D-tensor.
         """
-        batch_input_metas = [item.metainfo for item in batch_data_samples]
-        batch_input_metas = self.add_lidar2img(batch_input_metas)
-        img_feats = self.extract_feat(batch_inputs_dict, batch_input_metas,batch_data_samples)
-        bsz=len(batch_data_samples)
-        # #文本预处理
-        # text_prompts=[
-        # 'car', 'truck', 'trailer', 'bus', 'construction vehicle', 'bicycle',
-        # 'motorcycle', 'pedestrian', 'traffic cone', 'barrier']
-        batch_gt_instances_3d = [
-            item.gt_instances_3d for item in batch_data_samples
+        assert len(inputs) == len(self.in_channels)
+
+        # build laterals
+        laterals = [
+            lateral_conv(inputs[i + self.start_level]).unsqueeze(0)
+            for i, lateral_conv in enumerate(self.lateral_convs)
         ]
-        # new_text_prompts=[]
-        # positive_maps=[]
-        # tokenized, caption_string, tokens_positive, _ = \
-        #         self.get_tokens_and_prompts(
-        #             text_prompts, True)
-        # new_text_prompts = [caption_string] * len(batch_data_samples) 
-        # gt_labels=[
-        #         data_sample.labels_3d 
-        #         for data_sample in batch_gt_instances_3d
-        #         ]
-        # for gt_label in gt_labels:
-        #     new_tokens_positive = [
-        #             tokens_positive[label] for label in gt_label
-        #         ]
-        #     _, positive_map = self.get_positive_map(
-        #             tokenized, new_tokens_positive)
-        #     positive_maps.append(positive_map)
+        #文本预处理
+        text_prompts=[
+        'car', 'truck', 'trailer', 'bus', 'construction vehicle', 'bicycle',
+        'motorcycle', 'pedestrian', 'traffic cone', 'barrier']
 
-        # text_dict = self.language_model(new_text_prompts)
-        # for key, value in text_dict.items():
-        #     text_dict[key] = torch.cat([value] * 6, dim=0)
-        # if self.text_feat_map is not None:
-        #     text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
-        #####################################################################
-        # encoder_inputs_dict = self.pre_transformer(
-        #     img_feats, batch_data_samples)
+        new_text_prompts=[]
+        positive_maps=[]
+        tokenized, caption_string, tokens_positive, _ = \
+                self.get_tokens_and_prompts(
+                    text_prompts, True)
+        new_text_prompts = [caption_string] 
+        if batch_data_samples is not None:
+            batch_gt_instances_3d = [
+            item.gt_instances_3d for item in batch_data_samples
+                                    ]
+            if all(hasattr(data_sample, "labels_3d") for data_sample in batch_gt_instances_3d):
+                gt_labels=[
+                        data_sample.labels_3d 
+                        for data_sample in batch_gt_instances_3d
+                        ]
+                for gt_label in gt_labels:
+                    new_tokens_positive = [
+                            tokens_positive[label] for label in gt_label
+                        ]
+                    _, positive_map = self.get_positive_map(
+                            tokenized, new_tokens_positive)
+                    positive_maps.append(positive_map)
 
-        # memory = self.forward_encoder(
-        #     **encoder_inputs_dict, text_dict=text_dict)
-        # del img_feats
-        # img_feats = self.restore_img_feats(memory, encoder_inputs_dict['spatial_shapes'], encoder_inputs_dict['level_start_index'])
-        outs = self.pts_bbox_head(img_feats, batch_input_metas, **kwargs)#text_dict
-        loss_inputs = [batch_gt_instances_3d, outs]
-        losses_pts = self.pts_bbox_head.loss_by_feat(*loss_inputs)
+        text_dict = self.language_model(new_text_prompts)
+        for key, value in text_dict.items():
+            text_dict[key] = torch.cat([value] * 6, dim=0)
+        if self.text_feat_map is not None:
+            text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
+        encoder_inputs_dict = self.pre_transformer(
+            laterals, batch_data_samples)
+        memory = self.forward_encoder(
+            **encoder_inputs_dict, text_dict=text_dict)
+        laterals = self.restore_img_feats(memory, encoder_inputs_dict['spatial_shapes'], encoder_inputs_dict['level_start_index'])
+        # build top-down path
+        used_backbone_levels = len(laterals)
+        for i in range(used_backbone_levels - 1, 0, -1):
+            # In some cases, fixing `scale factor` (e.g. 2) is preferred, but
+            #  it cannot co-exist with `size` in `F.interpolate`.
+            if 'scale_factor' in self.upsample_cfg:
+                # fix runtime error of "+=" inplace operation in PyTorch 1.10
+                laterals[i - 1] = laterals[i - 1] + F.interpolate(
+                    laterals[i], **self.upsample_cfg)
+            else:
+                prev_shape = laterals[i - 1].shape[2:]
+                laterals[i - 1] = laterals[i - 1] + F.interpolate(
+                    laterals[i], size=prev_shape, **self.upsample_cfg)
+        # build outputs
+        # part 1: from original levels
+        outs = [
+            self.fpn_convs[i](laterals[i]) for i in range(used_backbone_levels)
+        ]
+        # part 2: add extra levels
+        if self.num_outs > len(outs):
+            # use max pool to get more levels on top of outputs
+            # (e.g., Faster R-CNN, Mask R-CNN)
+            if not self.add_extra_convs:
+                for i in range(self.num_outs - used_backbone_levels):
+                    outs.append(F.max_pool2d(outs[-1], 1, stride=2))
+            # add conv layers on top of original feature maps (RetinaNet)
+            else:
+                if self.add_extra_convs == 'on_input':
+                    extra_source = inputs[self.backbone_end_level - 1]
+                elif self.add_extra_convs == 'on_lateral':
+                    extra_source = laterals[-1]
+                elif self.add_extra_convs == 'on_output':
+                    extra_source = outs[-1]
+                else:
+                    raise NotImplementedError
+                outs.append(self.fpn_convs[used_backbone_levels](extra_source))
+                for i in range(used_backbone_levels + 1, self.num_outs):
+                    if self.relu_before_extra_convs:
+                        outs.append(self.fpn_convs[i](F.relu(outs[-1])))
+                    else:
+                        outs.append(self.fpn_convs[i](outs[-1]))
+        return tuple(outs)
 
-        return losses_pts
 
-    # original simple_test
-    def predict(self, batch_inputs_dict: Dict[str, Optional[Tensor]],
-                batch_data_samples: List[Det3DDataSample],
-                **kwargs) -> List[Det3DDataSample]:
-        """Forward of testing.
-
-        Args:
-            batch_inputs_dict (dict): The model input dict which include
-                `imgs` keys.
-
-                - imgs (torch.Tensor): Tensor of batched multi-view images.
-                    It has shape (B, N, C, H ,W)
-            batch_data_samples (List[:obj:`Det3DDataSample`]): The Data
-                Samples. It usually includes information such as
-                `gt_instance_3d`.
-
-        Returns:
-            list[:obj:`Det3DDataSample`]: Detection results of the
-            input sample. Each Det3DDataSample usually contain
-            'pred_instances_3d'. And the ``pred_instances_3d`` usually
-            contains following keys.
-
-            - scores_3d (Tensor): Classification scores, has a shape
-                (num_instances, )
-            - labels_3d (Tensor): Labels of bboxes, has a shape
-                (num_instances, ).
-            - bbox_3d (:obj:`BaseInstance3DBoxes`): Prediction of bboxes,
-                contains a tensor with shape (num_instances, 9).
-        """
-        batch_input_metas = [item.metainfo for item in batch_data_samples]
-        batch_input_metas = self.add_lidar2img(batch_input_metas)
-        img_feats = self.extract_feat(batch_inputs_dict, batch_input_metas,batch_data_samples)
-        outs = self.pts_bbox_head(img_feats, batch_input_metas)
-
-        results_list_3d = self.pts_bbox_head.predict_by_feat(
-            outs, batch_input_metas, **kwargs)
-
-        # change the bboxes' format
-        detsamples = self.add_pred_to_datasample(batch_data_samples,
-                                                 results_list_3d)
-        return detsamples
-
-    # may need speed-up
-    def add_lidar2img(self, batch_input_metas: List[Dict]) -> List[Dict]:
-        """add 'lidar2img' transformation matrix into batch_input_metas.
-
-        Args:
-            batch_input_metas (list[dict]): Meta information of multiple inputs
-                in a batch.
-
-        Returns:
-            batch_input_metas (list[dict]): Meta info with lidar2img added
-        """
-        for meta in batch_input_metas:
-            l2i = list()
-            for i in range(len(meta['cam2img'])):
-                c2i = torch.tensor(meta['cam2img'][i]).double()
-                l2c = torch.tensor(meta['lidar2cam'][i]).double()
-                l2i.append(get_lidar2img(c2i, l2c).float().numpy())
-            meta['lidar2img'] = l2i
-        return batch_input_metas
-        
     def get_tokens_and_prompts(
             self,
             original_caption: Union[str, list, tuple],
@@ -473,7 +489,7 @@ class DETR3D(MVXTwoStageDetector):
             for i in range(batch_size):
                 for m in mlvl_masks:
                     tmp.append(self.get_valid_ratio(m[i]))
-            valid_ratios = torch.stack(tmp,1).view(batch_size,num_cams,4,2)
+            valid_ratios = torch.stack(tmp,1).view(batch_size,num_cams,3,2)
         encoder_inputs_dict = dict(
             feat=feat_flatten,
             feat_mask=mask_flatten,
@@ -564,7 +580,7 @@ class DETR3D(MVXTwoStageDetector):
 
             # 切片操作，从memory中恢复当前层次的img_feat
             img_feat = memory[:, :, start_index:end_index]
-            img_feat = img_feat.reshape(1, 6, height, width,256).permute(0,1,4,2,3)
+            img_feat = img_feat.reshape(6, height, width,256).permute(0,3,1,2)
             img_feats.append(img_feat)
 
         return img_feats
