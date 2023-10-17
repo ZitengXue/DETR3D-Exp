@@ -185,6 +185,14 @@ class DETR3D(MVXTwoStageDetector):
         if self.text_feat_map is not None:
             text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
         memory_text=text_dict['embedded']
+        for i, data_samples in enumerate(batch_data_samples):
+            positive_map = positive_maps[i].to(
+                batch_inputs_dict['imgs'].device).bool().float()
+            text_token_mask = text_dict['text_token_mask'][i]
+            data_samples.gt_instances_3d.positive_maps = positive_map
+            data_samples.gt_instances_3d.text_token_mask = \
+                text_token_mask.unsqueeze(0).repeat(
+                    len(positive_map), 1)
         #####################################################################
         # encoder_inputs_dict = self.pre_transformer(
         #     img_feats, batch_data_samples)
@@ -193,7 +201,9 @@ class DETR3D(MVXTwoStageDetector):
         #     **encoder_inputs_dict, text_dict=text_dict)#text和图像特征融合
         # del img_feats
         # img_feats = self.restore_img_feats(memory, encoder_inputs_dict['spatial_shapes'], encoder_inputs_dict['level_start_index'])
-        outs = self.pts_bbox_head(img_feats, batch_input_metas,memory_text, **kwargs)#text_dict
+        outs = self.pts_bbox_head(img_feats, batch_input_metas,memory_text,text_dict['text_token_mask'], **kwargs)#text_dict
+        outs['memory_text']=memory_text     #new
+        outs['text_token_mask']=text_dict['text_token_mask']    #new
         loss_inputs = [batch_gt_instances_3d, outs]
         losses_pts = self.pts_bbox_head.loss_by_feat(*loss_inputs)
 

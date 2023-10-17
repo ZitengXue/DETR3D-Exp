@@ -6,8 +6,9 @@ from .hungarian_assigner_3d import HungarianAssigner3D
 from .match_cost import BBox3DL1Cost
 from .nms_free_coder import NMSFreeCoder
 from .vovnet import VoVNet
+from .detr3d_contrastive_head import DETR3DHead_Contrastive
 __all__ = [
-    'VoVNet', 'DETR3D', 'DETR3DHead', 'Detr3DTransformer',
+    'VoVNet', 'DETR3D','DETR3DHead_Contrastive', 'DETR3DHead', 'Detr3DTransformer',
     'Detr3DTransformerDecoder', 'Detr3DCrossAtten', 'HungarianAssigner3D',
     'BBox3DL1Cost', 'NMSFreeCoder'
 ]
