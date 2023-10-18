@@ -10,6 +10,7 @@ from torch.nn.modules.batchnorm import _BatchNorm
 import torch.nn.init as init
 from mmdet3d.registry import MODELS
 from mmdet.models.layers import ResLayer
+from fairscale.nn.checkpoint import checkpoint_wrapper
 
 class BasicBlock(BaseModule):
     expansion = 1
@@ -545,6 +546,9 @@ class ResNet_Language(BaseModule):
             SingleScaleBiAttentionBlock(**self.fusion_layer_cfg)
             for _ in range(4)
         ])
+        for i in range(4):
+            self.fusion_layers[i] = checkpoint_wrapper(
+                    self.fusion_layers[i])
         self._freeze_stages()
 
         self.feat_dim = self.block.expansion * base_channels * 2**(
