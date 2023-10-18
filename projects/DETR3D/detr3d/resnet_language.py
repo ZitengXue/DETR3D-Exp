@@ -700,9 +700,19 @@ class ResNet_Language(BaseModule):
         for i, layer_name in enumerate(self.res_layers):
             res_layer = getattr(self, layer_name)
             x = res_layer(x).unsqueeze(0)
-            b,n,c,h,w=x.shape
-            x=x.view(b,n,c,-1).permute(0,1,3,2)
-            x,_=self.fusion_layers[i](x,embedds,encoder_inputs_dict['feat_mask'][i])
+            if i == 0:
+                b,n,c,h,w=x.shape
+                x=x.view(b,n,c,-1).permute(0,1,3,2)
+                x,_=self.fusion_layers[i](x,embedds,encoder_inputs_dict['feat_mask'][i])
+                x=x.view(b,n,h,w,c).permute(0,1,4,2,3).squeeze(0)
+            else:
+                x=self.lower[i-1](x.squeeze(0)).unsqueeze(0)
+                b,n,c,h,w=x.shape
+                x=x.view(b,n,c,-1).permute(0,1,3,2)
+                x,_=self.fusion_layers[i](x,embedds,encoder_inputs_dict['feat_mask'][i])
+                x=x.view(b,n,h,w,c).permute(0,1,4,2,3).squeeze(0)
+                x=self.lift[i-1](x)
+                
             if i in self.out_indices:
                 outs.append(x)
         return tuple(outs)

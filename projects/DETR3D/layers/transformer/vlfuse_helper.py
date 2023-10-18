@@ -196,7 +196,8 @@ class BiMultiHeadAttention(nn.Module):
                 attention_mask_v[:, :,None,
                                  None, :].repeat(1, 1, self.num_heads, 1,
                                                  1).flatten(0, 1).flatten(0,1))
-            attn_weights_l.masked_fill_(attention_mask_v, float('-inf'))
+            device=attn_weights_l.device
+            attn_weights_l.masked_fill_(attention_mask_v.to(device), float('-inf'))
 
         attn_weights_l = attn_weights_l.softmax(dim=-1)
 

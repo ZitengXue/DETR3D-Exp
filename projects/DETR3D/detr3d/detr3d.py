@@ -74,7 +74,7 @@ class DETR3D(MVXTwoStageDetector):
         self._special_tokens = '. '
         self.positional_encoding = SinePositionalEncoding(
             **positional_encoding_single)
-        self.encoder = GroundingDinoTransformerEncoder(**encoder)
+        # self.encoder = GroundingDinoTransformerEncoder(**encoder)
         # self.level_embed = nn.Parameter(
         #     torch.Tensor(4, 256))
         nn.init.constant_(self.text_feat_map.bias.data, 0)
@@ -221,29 +221,27 @@ class DETR3D(MVXTwoStageDetector):
         img_feats = self.extract_feat(batch_inputs_dict, batch_input_metas)
         bsz=len(batch_data_samples)
         #文本预处理
-        text_prompts=[
-        'car', 'truck', 'trailer', 'bus', 'construction vehicle', 'bicycle',
-        'motorcycle', 'pedestrian', 'traffic cone', 'barrier']
+        nlp_list = ["CAR",
+            "TRUCK",
+            "TRAILER",
+            "BUS",
+            "CONSTRUCTION VEHICLE",
+            "BICYLE",
+            "MOTORCYCLE",
+            "PEDESTRIAN",
+            "TRAFFIC CONE",
+            "BARRIER"]
 
-        new_text_prompts=[]
-        positive_maps=[]
-        tokenized, caption_string, tokens_positive, _ = \
-                self.get_tokens_and_prompts(
-                    text_prompts, True)
-        new_text_prompts = [caption_string] * len(batch_data_samples) 
-        text_dict = self.language_model(new_text_prompts)
-        for key, value in text_dict.items():
-            text_dict[key] = torch.cat([value] * 6, dim=0)
+
+        phrase = self.bert_tokenizer.batch_encode_plus(nlp_list, padding='longest', return_tensors='pt')
+        embeds = self.bert_model(phrase['input_ids'].cuda(), attention_mask=phrase['attention_mask'].cuda())[0]
+        embeds = embeds.mean(dim=1).reshape(bsz,len(nlp_list),-1)
         if self.text_feat_map is not None:
-            text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
+            embeds = self.text_feat_map(embeds)
+        embeds = embeds.repeat(6, 1, 1)
         #####################################################################
-        encoder_inputs_dict = self.pre_transformer(
-            img_feats, batch_data_samples)
-
-        memory = self.forward_encoder(
-            **encoder_inputs_dict, text_dict=text_dict)
-        del img_feats
-        img_feats = self.restore_img_feats(memory, encoder_inputs_dict['spatial_shapes'], encoder_inputs_dict['level_start_index'])
+        encoder_inputs_dict = self.pre_transformer(batch_data_samples)
+        img_feats = self.extract_feat(batch_inputs_dict, batch_input_metas,embeds,encoder_inputs_dict)
         outs = self.pts_bbox_head(img_feats, batch_input_metas)
 
         results_list_3d = self.pts_bbox_head.predict_by_feat(

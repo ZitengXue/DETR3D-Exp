@@ -261,7 +261,10 @@ test_evaluator = val_evaluator
 optim_wrapper = dict(
     type='OptimWrapper',
     optimizer=dict(type='AdamW', lr=2e-4, weight_decay=0.01),
-    paramwise_cfg=dict(custom_keys={'img_backbone': dict(lr_mult=0.1)}),
+    paramwise_cfg=dict(custom_keys={'img_backbone': dict(lr_mult=0.1),
+                                    'img_backbone.lower':dict(lr_mult=1.0),
+                                    'img_backbone.lift':dict(lr_mult=1.0),
+                                    'img_backbone.fusion_layers':dict(lr_mult=1.0)}),
     clip_grad=dict(max_norm=35, norm_type=2),
 )
 
