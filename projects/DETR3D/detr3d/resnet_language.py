@@ -699,7 +699,7 @@ class ResNet_Language(BaseModule):
         outs = []
         for i, layer_name in enumerate(self.res_layers):
             res_layer = getattr(self, layer_name)
-            x = res_layer(x)
+            x = res_layer(x).unsqueeze(0)
             b,n,c,h,w=x.shape
             x=x.view(b,n,c,-1).permute(0,1,3,2)
             x,_=self.fusion_layers[i](x,embedds,encoder_inputs_dict['feat_mask'][i])
