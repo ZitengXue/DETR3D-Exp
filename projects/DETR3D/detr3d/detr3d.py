@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from ..layers.transformer.grounding_dino_layers import (
     GroundingDinoTransformerDecoder, GroundingDinoTransformerEncoder)
 from mmdet.models.layers.positional_encoding import SinePositionalEncoding
-
+from transformers import BertTokenizer, BertModel
 @MODELS.register_module()
 class DETR3D(MVXTwoStageDetector):
     """DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries
@@ -64,9 +64,11 @@ class DETR3D(MVXTwoStageDetector):
             True, True, rotate=1, offset=False, ratio=0.5, mode=1, prob=0.7)
         self.use_grid_mask = use_grid_mask
         self.language_cfg = language_model
-        self.language_model = MODELS.build(self.language_cfg)
+        # self.language_model = MODELS.build(self.language_cfg)
+        self.bert_tokenizer = BertTokenizer.from_pretrained('./text')
+        self.bert_model = BertModel.from_pretrained('./text').cuda()
         self.text_feat_map = nn.Linear(
-            self.language_model.language_backbone.body.language_dim,
+            768,
             256,
             bias=True)
         self._special_tokens = '. '
@@ -79,7 +81,7 @@ class DETR3D(MVXTwoStageDetector):
         # normal_(self.level_embed)
         nn.init.xavier_uniform_(self.text_feat_map.weight.data)
     def extract_img_feat(self, img: Tensor,
-                         batch_input_metas: List[dict]) -> List[Tensor]:
+                         batch_input_metas: List[dict],embeds:Tensor=None) -> List[Tensor]:
         """Extract features from images.
 
         Args:
@@ -106,7 +108,7 @@ class DETR3D(MVXTwoStageDetector):
                 img = img.view(B * N, C, H, W)
             if self.use_grid_mask:
                 img = self.grid_mask(img)  # mask out some grids
-            img_feats = self.img_backbone(img)
+            img_feats = self.img_backbone(img,embeds)
             if isinstance(img_feats, dict):
                 img_feats = list(img_feats.values())
         else:
@@ -121,13 +123,13 @@ class DETR3D(MVXTwoStageDetector):
         return img_feats_reshaped
 
     def extract_feat(self, batch_inputs_dict: Dict,
-                     batch_input_metas: List[dict]) -> List[Tensor]:
+                     batch_input_metas: List[dict],embeds:Tensor=None) -> List[Tensor]:
         """Extract features from images.
 
         Refer to self.extract_img_feat()
         """
         imgs = batch_inputs_dict.get('imgs', None)
-        img_feats = self.extract_img_feat(imgs, batch_input_metas)
+        img_feats = self.extract_img_feat(imgs, batch_input_metas,embeds)
         return img_feats
 
     def _forward(self):
@@ -152,44 +154,35 @@ class DETR3D(MVXTwoStageDetector):
         """
         batch_input_metas = [item.metainfo for item in batch_data_samples]
         batch_input_metas = self.add_lidar2img(batch_input_metas)
-        img_feats = self.extract_feat(batch_inputs_dict, batch_input_metas)
         bsz=len(batch_data_samples)
         #文本预处理
-        text_prompts=[
-        'car', 'truck', 'trailer', 'bus', 'construction vehicle', 'bicycle',
-        'motorcycle', 'pedestrian', 'traffic cone', 'barrier']
+        nlp_list = ["CAR",
+            "TRUCK",
+            "TRAILER",
+            "BUS",
+            "CONSTRUCTION VEHICLE",
+            "BICYLE",
+            "MOTORCYCLE",
+            "PEDESTRIAN",
+            "TRAFFIC CONE",
+            "BARRIER"]
         batch_gt_instances_3d = [
             item.gt_instances_3d for item in batch_data_samples
         ]
-        new_text_prompts=[]
-        positive_maps=[]
-        tokenized, caption_string, tokens_positive, _ = \
-                self.get_tokens_and_prompts(
-                    text_prompts, True)
-        new_text_prompts = [caption_string] * len(batch_data_samples) 
-        gt_labels=[
-                data_sample.labels_3d 
-                for data_sample in batch_gt_instances_3d
-                ]
-        for gt_label in gt_labels:
-            new_tokens_positive = [
-                    tokens_positive[label] for label in gt_label
-                ]
-            _, positive_map = self.get_positive_map(
-                    tokenized, new_tokens_positive)
-            positive_maps.append(positive_map)
 
-        text_dict = self.language_model(new_text_prompts)
-        for key, value in text_dict.items():
-            text_dict[key] = torch.cat([value] * 6, dim=0)
+        phrase = self.bert_tokenizer.batch_encode_plus(nlp_list, padding='longest', return_tensors='pt')
+        embeds = self.bert_model(phrase['input_ids'].cuda(), attention_mask=phrase['attention_mask'].cuda())[0]
+        embeds = embeds.mean(dim=1).reshape(bsz,len(nlp_list),-1)
         if self.text_feat_map is not None:
-            text_dict['embedded'] = self.text_feat_map(text_dict['embedded'])
+            embeds = self.text_feat_map(embeds)
+        embeds = embeds.repeat(6, 1, 1)
         #####################################################################
+        img_feats = self.extract_feat(batch_inputs_dict, batch_input_metas,embeds)
         encoder_inputs_dict = self.pre_transformer(
             img_feats, batch_data_samples)
 
         memory = self.forward_encoder(
-            **encoder_inputs_dict, text_dict=text_dict)
+            **encoder_inputs_dict, embeds=embeds)
         del img_feats
         img_feats = self.restore_img_feats(memory, encoder_inputs_dict['spatial_shapes'], encoder_inputs_dict['level_start_index'])
         outs = self.pts_bbox_head(img_feats, batch_input_metas, **kwargs)#text_dict
@@ -513,8 +506,8 @@ class DETR3D(MVXTwoStageDetector):
     def forward_encoder(self, feat: Tensor, feat_mask: Tensor,
                          spatial_shapes: Tensor,
                         level_start_index: Tensor, valid_ratios: Tensor,
-                        text_dict: Dict) -> Dict:
-        text_token_mask = text_dict['text_token_mask']
+                        embeds:Tensor=None) -> Dict:
+
         memory, _ = self.encoder(
             query=feat,
             # query_pos=feat_pos,
@@ -523,10 +516,7 @@ class DETR3D(MVXTwoStageDetector):
             level_start_index=level_start_index,
             valid_ratios=valid_ratios,
             # for text encoder
-            memory_text=text_dict['embedded'],
-            text_attention_mask=~text_token_mask,
-            position_ids=text_dict['position_ids'],
-            text_self_attention_masks=text_dict['masks'])
+            memory_text=embeds,)
         # encoder_outputs_dict = dict(
         #     memory=memory,
         #     memory_mask=feat_mask,
