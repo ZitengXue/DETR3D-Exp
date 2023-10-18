@@ -65,7 +65,7 @@ model = dict(
         temperature=20,
         offset=0.0),
     img_backbone=dict(
-        type='mmdet.ResNet',
+        type='mmdet3d.ResNet_Language',
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
@@ -74,7 +74,14 @@ model = dict(
         norm_eval=True,
         style='caffe',
         dcn=dict(type='DCNv2', deform_groups=1, fallback_on_stride=False),
-        stage_with_dcn=(False, False, True, True)),
+        stage_with_dcn=(False, False, True, True),
+        fusion_layer_cfg=dict(
+            v_dim=256,
+            l_dim=256,
+            embed_dim=1024,
+            num_heads=4,
+            init_values=1e-4),
+        ),
     img_neck=dict(
         type='mmdet.FPN',
         in_channels=[256, 512, 1024, 2048],

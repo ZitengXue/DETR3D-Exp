@@ -81,7 +81,7 @@ class DETR3D(MVXTwoStageDetector):
         # normal_(self.level_embed)
         nn.init.xavier_uniform_(self.text_feat_map.weight.data)
     def extract_img_feat(self, img: Tensor,
-                         batch_input_metas: List[dict],embeds:Tensor=None) -> List[Tensor]:
+                         batch_input_metas: List[dict],embeds:Tensor=None,encoder_inputs_dict=None) -> List[Tensor]:
         """Extract features from images.
 
         Args:
@@ -108,7 +108,7 @@ class DETR3D(MVXTwoStageDetector):
                 img = img.view(B * N, C, H, W)
             if self.use_grid_mask:
                 img = self.grid_mask(img)  # mask out some grids
-            img_feats = self.img_backbone(img,embeds)
+            img_feats = self.img_backbone(img,embeds,encoder_inputs_dict)
             if isinstance(img_feats, dict):
                 img_feats = list(img_feats.values())
         else:
@@ -123,13 +123,13 @@ class DETR3D(MVXTwoStageDetector):
         return img_feats_reshaped
 
     def extract_feat(self, batch_inputs_dict: Dict,
-                     batch_input_metas: List[dict],embeds:Tensor=None) -> List[Tensor]:
+                     batch_input_metas: List[dict],embeds:Tensor=None,encoder_inputs_dict=None) -> List[Tensor]:
         """Extract features from images.
 
         Refer to self.extract_img_feat()
         """
         imgs = batch_inputs_dict.get('imgs', None)
-        img_feats = self.extract_img_feat(imgs, batch_input_metas,embeds)
+        img_feats = self.extract_img_feat(imgs, batch_input_metas,embeds,encoder_inputs_dict)
         return img_feats
 
     def _forward(self):
@@ -177,14 +177,10 @@ class DETR3D(MVXTwoStageDetector):
             embeds = self.text_feat_map(embeds)
         embeds = embeds.repeat(6, 1, 1)
         #####################################################################
-        img_feats = self.extract_feat(batch_inputs_dict, batch_input_metas,embeds)
-        encoder_inputs_dict = self.pre_transformer(
-            img_feats, batch_data_samples)
+        encoder_inputs_dict = self.pre_transformer(batch_data_samples)
+        img_feats = self.extract_feat(batch_inputs_dict, batch_input_metas,embeds,encoder_inputs_dict)
 
-        memory = self.forward_encoder(
-            **encoder_inputs_dict, embeds=embeds)
-        del img_feats
-        img_feats = self.restore_img_feats(memory, encoder_inputs_dict['spatial_shapes'], encoder_inputs_dict['level_start_index'])
+        # img_feats = self.restore_img_feats(memory, encoder_inputs_dict['spatial_shapes'], encoder_inputs_dict['level_start_index'])
         outs = self.pts_bbox_head(img_feats, batch_input_metas, **kwargs)#text_dict
         loss_inputs = [batch_gt_instances_3d, outs]
         losses_pts = self.pts_bbox_head.loss_by_feat(*loss_inputs)
@@ -383,7 +379,6 @@ class DETR3D(MVXTwoStageDetector):
     
     def pre_transformer(
             self,
-            mlvl_feats: Tuple[Tensor],
             batch_data_samples: OptSampleList = None) -> Tuple[Dict]:
         """Process image features before feeding them to the transformer.
 
@@ -411,95 +406,47 @@ class DETR3D(MVXTwoStageDetector):
             - decoder_inputs_dict (dict): The keyword args dictionary of
               `self.forward_decoder()`, which includes 'memory_mask'.
         """
-        batch_size = mlvl_feats[0].size(0)
-        num_cams=mlvl_feats[0].size(1)
+        batch_size =len(batch_data_samples)
+        num_cams=6
         # construct binary masks for the transformer.
         assert batch_data_samples is not None
         batch_input_shape = batch_data_samples[0].batch_input_shape
         input_img_h, input_img_w = batch_input_shape
         img_shape_list = [sample.img_shape for sample in batch_data_samples]
-        same_shape_flag = all([
-            s[0] == input_img_h and s[1] == input_img_w for s in img_shape_list
-        ])
-        # support torch2onnx without feeding masks
-        if torch.onnx.is_in_onnx_export() or same_shape_flag:
-            mlvl_masks = []
-            mlvl_pos_embeds = []
-            for feat in mlvl_feats:
-                mlvl_masks.append(None)
-                mlvl_pos_embeds.append(
-                    self.positional_encoding(None, input=feat))
-        else:
-            masks = mlvl_feats[0].new_ones(
-                (batch_size, num_cams,input_img_h, input_img_w))
-            for img_id in range(batch_size):
-                for cam in range(num_cams):
-                    img_h, img_w = img_shape_list[img_id][cam]
-                    masks[img_id,cam, :img_h, :img_w] = 0
-            # NOTE following the official DETR repo, non-zero
-            # values representing ignored positions, while
-            # zero values means valid positions.
 
-            mlvl_masks = []
-            mlvl_pos_embeds = []
-            for feat in mlvl_feats:
-                mlvl_masks.append(
-                    F.interpolate(masks, size=feat.shape[-2:]).to(
-                        torch.bool))
-                tmp=[]
-                for i in range(batch_size):
-                    tmp.append(self.positional_encoding(mlvl_masks[-1][0]).unsqueeze(0))
-                concatenated = torch.cat(tmp, dim=0)
-                mlvl_pos_embeds.append(concatenated)
-
-        feat_flatten = []
-        lvl_pos_embed_flatten = []
+        masks = torch.ones(
+            (batch_size, num_cams,input_img_h, input_img_w))
+        for img_id in range(batch_size):
+            for cam in range(num_cams):
+                img_h, img_w = img_shape_list[img_id][cam]
+                masks[img_id,cam, :img_h, :img_w] = 0
+        # NOTE following the official DETR repo, non-zero
+        # values representing ignored positions, while
+        # zero values means valid positions.
+        sizes=[(232,400),(116,200),(58,100),(29,50)]
+        mlvl_masks = []
+        for size in sizes:
+            mlvl_masks.append(
+            F.interpolate(masks, size).to(
+                                torch.bool))
         mask_flatten = []
-        spatial_shapes = []
-        for lvl, (feat, mask, pos_embed) in enumerate(
-                zip(mlvl_feats, mlvl_masks, mlvl_pos_embeds)):
-            batch_size, n,c, h, w = feat.shape
-            spatial_shape = torch._shape_as_tensor(feat)[3:].to(feat.device)
-            # [bs, c, h_lvl, w_lvl] -> [bs, h_lvl*w_lvl, c]
-            feat = feat.view(batch_size,n,c, -1).permute(0, 1, 3, 2)
-            pos_embed = pos_embed.view(batch_size,n, c, -1).permute(0, 1, 3, 2)
-            # lvl_pos_embed = pos_embed + self.level_embed[lvl].view(1, 1, 1, -1)
-            # [bs, h_lvl, w_lvl] -> [bs, h_lvl*w_lvl]
+
+        for mask in mlvl_masks:
             if mask is not None:
                 mask = mask.flatten(2)
-
-            feat_flatten.append(feat)
-            # lvl_pos_embed_flatten.append(lvl_pos_embed)
             mask_flatten.append(mask)
-            spatial_shapes.append(spatial_shape)
-
-        # (bs, num_feat_points, dim)
-        feat_flatten = torch.cat(feat_flatten, 2)
-        # lvl_pos_embed_flatten = torch.cat(lvl_pos_embed_flatten, 2)
-        # (bs, num_feat_points), where num_feat_points = sum_lvl(h_lvl*w_lvl)
-        if mask_flatten[0] is not None:
-            mask_flatten = torch.cat(mask_flatten, 2)
-        else:
-            mask_flatten = None
-
+        spatial_shapes=[torch.Tensor(size) for size in sizes]
         # (num_level, 2)
         spatial_shapes = torch.cat(spatial_shapes).view(-1, 2)
         level_start_index = torch.cat((
             spatial_shapes.new_zeros((1, )),  # (num_level)
             spatial_shapes.prod(1).cumsum(0)[:-1]))
-        if mlvl_masks[0] is not None:
-            tmp=[]
-            for i in range(batch_size):
-                for m in mlvl_masks:
-                    tmp.append(self.get_valid_ratio(m[i]))
-            valid_ratios = torch.stack(tmp,1).view(batch_size,num_cams,4,2)
+
         encoder_inputs_dict = dict(
-            feat=feat_flatten,
             feat_mask=mask_flatten,
             # feat_pos=lvl_pos_embed_flatten,
             spatial_shapes=spatial_shapes,
-            level_start_index=level_start_index,
-            valid_ratios=valid_ratios)
+            level_start_index=level_start_index)
 
         return encoder_inputs_dict
     

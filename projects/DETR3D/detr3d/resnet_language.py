@@ -8,7 +8,7 @@ from mmcv.cnn import build_conv_layer, build_norm_layer, build_plugin_layer
 from mmengine.model import BaseModule
 from torch.nn.modules.batchnorm import _BatchNorm
 import torch.nn.init as init
-from mmdet.registry import MODELS
+from mmdet3d.registry import MODELS
 from mmdet.models.layers import ResLayer
 
 class BasicBlock(BaseModule):
@@ -388,7 +388,8 @@ class ResNet_Language(BaseModule):
                  with_cp=False,
                  zero_init_residual=True,
                  pretrained=None,
-                 init_cfg=None):
+                 init_cfg=None,
+                 fusion_layer_cfg=None):
         super(ResNet_Language, self).__init__(init_cfg)
         self.zero_init_residual = zero_init_residual
         if depth not in self.arch_settings:
@@ -497,7 +498,12 @@ class ResNet_Language(BaseModule):
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True)
         )
-        self.lower = nn.ModuleList([module_1, module_2])
+        module_3 = nn.Sequential(
+            nn.Conv2d(in_channels=2048, out_channels=256, kernel_size=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True)
+        )
+        self.lower = nn.ModuleList([module_1, module_2,module_3])
         for module in self.lower:
             for layer in module:
                 if isinstance(layer, nn.Conv2d):
@@ -514,11 +520,16 @@ class ResNet_Language(BaseModule):
                     nn.ReLU(inplace=True)
                 )
         module_2 = nn.Sequential(
-            nn.Conv2d(in_channels=256, out_channels=1024, kernel_size=1),
-            nn.BatchNorm2d(1024),
-            nn.ReLU(inplace=True)
+                    nn.Conv2d(in_channels=256, out_channels=1024, kernel_size=1),
+                    nn.BatchNorm2d(1024),
+                    nn.ReLU(inplace=True)
         )
-        self.lift = nn.ModuleList([module_1, module_2])
+        module_3 = nn.Sequential(
+                    nn.Conv2d(in_channels=256, out_channels=2048, kernel_size=1),
+                    nn.BatchNorm2d(2048),
+                    nn.ReLU(inplace=True)
+        )
+        self.lift = nn.ModuleList([module_1, module_2,module_3])
         for module in self.lift:
             for layer in module:
                 if isinstance(layer, nn.Conv2d):
@@ -529,9 +540,10 @@ class ResNet_Language(BaseModule):
                     nn.init.constant_(layer.weight, 1)
                     nn.init.constant_(layer.bias, 0)
         ##############################################################
+        self.fusion_layer_cfg =fusion_layer_cfg
         self.fusion_layers = nn.ModuleList([
             SingleScaleBiAttentionBlock(**self.fusion_layer_cfg)
-            for _ in range(3)
+            for _ in range(4)
         ])
         self._freeze_stages()
 
@@ -675,7 +687,7 @@ class ResNet_Language(BaseModule):
             for param in m.parameters():
                 param.requires_grad = False
 
-    def forward(self, x):
+    def forward(self, x ,embedds, encoder_inputs_dict):
         """Forward function."""
         if self.deep_stem:
             x = self.stem(x)
@@ -688,6 +700,9 @@ class ResNet_Language(BaseModule):
         for i, layer_name in enumerate(self.res_layers):
             res_layer = getattr(self, layer_name)
             x = res_layer(x)
+            b,n,c,h,w=x.shape
+            x=x.view(b,n,c,-1).permute(0,1,3,2)
+            x,_=self.fusion_layers[i](x,embedds,encoder_inputs_dict['feat_mask'][i])
             if i in self.out_indices:
                 outs.append(x)
         return tuple(outs)
@@ -704,16 +719,4 @@ class ResNet_Language(BaseModule):
                     m.eval()
 
 
-@MODELS.register_module()
-class ResNetV1d(ResNet_Language):
-    r"""ResNetV1d variant described in `Bag of Tricks
-    <https://arxiv.org/pdf/1812.01187.pdf>`_.
 
-    Compared with default ResNet(ResNetV1b), ResNetV1d replaces the 7x7 conv in
-    the input stem with three 3x3 convs. And in the downsampling block, a 2x2
-    avg_pool with stride 2 is added before conv, whose stride is changed to 1.
-    """
-
-    def __init__(self, **kwargs):
-        super(ResNetV1d, self).__init__(
-            deep_stem=True, avg_down=True, **kwargs)
