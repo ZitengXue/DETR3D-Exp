@@ -218,7 +218,6 @@ class DETR3D(MVXTwoStageDetector):
         """
         batch_input_metas = [item.metainfo for item in batch_data_samples]
         batch_input_metas = self.add_lidar2img(batch_input_metas)
-        img_feats = self.extract_feat(batch_inputs_dict, batch_input_metas)
         bsz=len(batch_data_samples)
         #文本预处理
         nlp_list = ["CAR",

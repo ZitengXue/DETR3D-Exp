@@ -158,7 +158,7 @@ model = dict(
                 pc_range=point_cloud_range))))
 
 dataset_type = 'NuScenesDataset'
-data_root = 'data/nuscenes1/'
+data_root = 'data/nuscenes/'
 
 test_transforms = [
     dict(
@@ -288,7 +288,7 @@ param_scheduler = [
 total_epochs = 24
 
 train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=total_epochs, val_interval=1)
+    type='EpochBasedTrainLoop', max_epochs=total_epochs, val_interval=6)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 default_hooks = dict(
